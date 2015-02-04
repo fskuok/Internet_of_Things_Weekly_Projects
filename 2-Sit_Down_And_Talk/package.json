@@ -1,0 +1,15 @@
+{
+  "name": "SitDownAndTalk",
+  "version": "0.0.0",
+  "description": "Sit Down And Talk",
+  "dependencies": {
+      "jquery": "*",
+      "eventsource": "*"
+  },
+  "main": "coordinator.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
