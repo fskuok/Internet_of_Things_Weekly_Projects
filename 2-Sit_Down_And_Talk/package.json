@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "Sit Down And Talk",
   "dependencies": {
-      "jquery": "*",
+      "stringify": "*",
       "eventsource": "*"
   },
   "main": "coordinator.js",

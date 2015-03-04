@@ -75,7 +75,7 @@
         
         var id = JSON.parse(e.data).coreid;
 
-        console.log("Chair ", id, " leaves");
+        console.log("Chair ", loc[id], " leaves");
 
         //if is a waiting chair, remove from the waiting list
         if(chairStatus[id].status === "waiting"){

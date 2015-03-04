@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			html{
+				background-image: url('bg.jpg');
+				background-attachment: fixed;
+				background-size: 100vw;
+			}
+			aside{
+				overflow: auto;
+			}
+			aside span{
+				color: white;
+				display: block;
+				text-align: center;
+				float: left;
+			}
+			.container{
+				margin: 0 auto;
+			}
+			h1{	
+				font-family: "Helvetica Neue";
+				text-align: center;
+				color: white;
+			}
+			.row{
+				overflow: auto;
+				position: relative;
+			}
+			span[class^=level]{
+				float: left;
+				display: block;
+			}
+			.level0{
+				background: rgba(255, 255, 255, 0.8);
+			}
+			.level1{
+				background: rgba(255, 160, 160, 0.8);
+			}
+			.level2{
+				background: rgba(255, 80, 80, 0.8);
+			}
+			.level3{
+				background: rgba(255, 0, 0, 0.8);
+			}
+		</style>
+
+    	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    	<script>
+
+    	var SparkCore = function(deviceID, accessToken, name){
+						this.deviceID = deviceID;
+						this.accessToken = accessToken;
+						this.name = name;
+					};
+				
+			// @para x2: String, Function
+			// @para x1: Object { String: Function [,String: Function] [,...] }
+			SparkCore.prototype.subscribe = function(name, handler) {
+
+				// if there is no event has been registered on this Spark
+				if(!this.eventSource){
+					this.eventSource = new EventSource("https://api.spark.io/v1/devices/" + this.deviceID + "/events/?access_token=" + this.accessToken);
+					this.subscribe('error', function(e){console.log(e)});
+				}
+
+				//if passed in event, register it
+				if(typeof name === 'string')
+					this.eventSource.addEventListener(name, handler, false);
+				//if passed in objects, dissemble them and call subscribe again
+				else if(typeof name === 'object')
+					for (n in name){
+						if(name.hasOwnProperty(n)){
+							this.subsribe(n, name[n]);
+						}
+					}
+	    	};
+	    	</script>
+	</head>
+
+	<body>
+		
+		<div class="container">
+			<h1>Noise Level</h1>
+			<aside>
+			</aside>
+			<section></section>
+		</div>
+		
+
+
+		<script>
+			var i, j;
+
+			var displayDataHeight = 600,
+				displayDataWidth = 600;
+
+			/*
+			 *    Model
+			 */
+
+			var buffer = [];
+				refreshInterval = 3*1000,    //10s
+				displayRow = 60,
+				displayMins = refreshInterval*displayRow,
+
+				//UI
+				areas = ['Area 1', 'Area 2', 'Area 3', 'Area 4', 'Area 5', 'Area 6']
+				areaNumber = areas.length,
+				
+
+				//return number between 1 - 3, using uneven possibility
+				randomLevel = function(){
+					var level, dice = Math.random();
+					if(dice < 0.35) level = 0;
+					else if(dice < 0.7) level = 1;
+					else if(dice < 0.95) level = 2;
+					else level = 3;
+					return level;
+				},
+
+				sparkCores = (function init(sparkCores){
+					var id;
+					for( id in sparkCores ){
+						if(sparkCores.hasOwnProperty(id)){
+							sparkCores[id] = new SparkCore(id, sparkCores[id]);
+							sparkCores[id].subscribe('dataChange', function(data){
+								buffer[i] = data;
+							});
+						}
+					}	
+				})({
+					"id": "access_token"
+				});
+
+
+			var dataArray = initArray([]);
+
+			function initArray(dataArray){
+				for(i = 0 ; i < displayRow; i++ ){
+					dataArray[i] = [];
+
+					for(j = 0; j < areaNumber; j++ ){
+						dataArray[i][j] = randomLevel();
+					}
+				}
+				return dataArray;
+			}
+
+			/*
+			 *    View
+			 */
+
+			function initView(){
+				d3.select('.container')
+					.style({
+						'width': displayDataWidth + 'px'
+					});
+
+			d3.select('section')
+				.style({
+					'overflow': 'hidden'
+				});
+
+			d3.select('aside')
+				.selectAll('span')
+				.data(areas)
+				.enter()
+				.append('span')
+				.style({
+					'width': ( displayDataWidth / areaNumber ) + 'px'
+				})
+				.html(function(d){
+					return d
+				});
+			}
+			
+
+			function updateView(){
+				//remove old view
+				d3	
+			 		.select('section')
+			 		.selectAll('div')
+			 		.remove()
+
+			 	//add new view
+			 	d3	
+			 		//for the container
+			 		.select('section')
+
+		 			//for each row
+		 			.selectAll('div')
+		 			.data(dataArray)
+		 			.enter()
+		 			.append('div')
+		 			.attr('class', 'row')
+		 			.style('transition', 'all ' + (refreshInterval/1000 + 's'))
+
+		 			//for the display rectangles
+	 				.selectAll('span')
+	 				.data(function(d){
+	 					return d;
+	 				})
+	 				.enter()
+	 				.append('span')
+	 				.attr({
+	 					'class': function(d){
+	 						return 'level' + d;
+	 					}
+	 				})
+	 				.style({
+	 					'width': ( displayDataWidth / areaNumber ) + 'px',
+	 					'height': ( displayDataHeight / displayRow ) + 'px'
+	 				})
+
+	 			d3
+	 				.selectAll('.row')
+	 				.transition()
+	 				.duration(refreshInterval)
+	 				.ease('linear')
+	 				.style('top', ( displayDataHeight / displayRow ) + 'px' );
+			}
+
+			
+			/*
+			 * Controller
+			 */
+
+			function updateData(){
+
+				//dummy data, just for test
+				for(var i = 0; i < areaNumber; i++){
+					buffer[i] = randomLevel();
+				}
+
+				//remove oldest data, add new data
+				dataArray.pop();
+				dataArray.unshift(buffer.slice());
+
+				updateView();
+
+				//
+				setTimeout(updateData, refreshInterval);
+			}
+			
+
+
+			initView();
+			updateData();
+			
+		    
+		</script>
+	</body>
+</html>

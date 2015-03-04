@@ -1,4 +1,5 @@
-var $ = require('jquery'),
+var http = require('http'),
+    stringify = require('stringify'),
     EventSource = require('eventsource');
 
 
@@ -136,7 +137,7 @@ function callFn(chairId, fnName, arg) {
 
     var req = http.request(requestObj);
 
-    req.write(arg);
+    req.write(stringify(arg));
     req.end();
 
 
